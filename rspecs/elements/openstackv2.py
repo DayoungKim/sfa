@@ -154,6 +154,54 @@ class OSNeutronLoadBalancer(OSResource):
     }
     hot_type = 'OS::Neutron::LoadBalancer'
 
+class OSNeutronPool(OSResource):
+    fields = {
+        'admin_state_up':None,#boolean
+        'description':None,
+        'lb_method':None,#not optional Allowed values: ROUND_ROBIN, LEAST_CONNECTIONS, SOURCE_IP
+        'monitors':'simple_list',
+        'protocol':None,#not optional Allowed values: TCP, HTTP, HTTPS
+        #'provider':'get_resource',#Available since 5.0.0 (Liberty)
+        'subnet':None,#not optional
+        'vip':{
+            'address':None,
+            'admin_state_up':None,#boolean
+            'connection_limit':None,
+            'description':None,
+            'name':None,
+            'protocol_port':None,
+            'session_persistence':{
+                'cookie_name':None,#not optional if type is APP_COOKIE
+                'type':None#Allowed values: SOURCE_IP, HTTP_COOKIE, APP_COOKIE
+            },
+            'subnet':'get_resource'
+        }
+    }
+    hot_type = 'OS::Neutron::Pool'
+
+class OSNeutronPoolMember(OSResource):
+    fields = {
+        'address':None,#not optional
+        'admin_state_up':None,#boolean
+        'pool_id':None,#not optional
+        'protocol_port':None,#not optional range 0 to 65535
+        'weight':None#range 0 to 256
+    }
+    hot_type = 'OS::Neutron::PoolMember'
+
+class OSNeutronHealthMonitor(OSResource):
+    fields = {
+        'admin_state_up':None,
+        'delay':None,#not optional
+        'expected_codes':None,#list of HTTP status codes expected in response
+        'http_method':None,
+        'max_retries':None,
+        'timeout':None,#not optional
+        'type':None,#not optional Allowed values: PING, TCP, HTTP, HTTPS
+        'url_path':None
+    }
+    hot_type = 'OS::Neutron::HealthMonitor'
+
 """
 class (OSResource):
     fields = {
@@ -228,7 +276,10 @@ class OSSliver(Element):
         'firewallrull':OSNeutronFirewallRule,
         'floatingip':OSNeutronFloatingIP,
         'floatingipAssociation':OSNeutronFloatingIPAssociation,
-        'loadbalancer':OSNeutronLoadBalancer
+        'loadbalancer':OSNeutronLoadBalancer,
+        'pool':OSNeutronPool,
+        'poolmember':OSNeutronPoolMember,
+        'healthmonitor':OSNeutronHealthMonitor
     }
 
     def to_hot(self, arg_dict):# hot yaml(x) hot json(o)
