@@ -37,9 +37,9 @@ class OSResource(Element):
         if self.hot_type == None:
             return properties
 
-        properties.pop('name')
+        properties.pop('osname')
         return {
-            self['name']:{
+            self['osname']:{
                 'type':self.hot_type,
                 'properties':properties
             }
@@ -50,10 +50,113 @@ class (OSResource):
     }
     hot_type = ''
 """
+class OSNeutronNet(OSResource):
+    fields = {
+        'osname':None,
+        'admin_state_up':None,#boolean
+        'dhcp_agent_ids':'simple_list',
+        'port_security_enabled':None,#boolean
+        'shared':None,#boolean,
+        'tenant_id': None
+        #'value_specs':{...}
+    }
+    hot_type = 'OS::Neutron::Net'
+
+class OSNeutronSubnet(OSResource):
+    fields = {
+        'osname':None,
+        'allocation_pools':{'class':OSResource,'fields':{'start':None,'end':None}},
+        'cidr':None,
+        'dns_nameservers':'simple_list',
+        'enable_dhcp':None,#boolean default True
+        'gateway_ip':None,
+        'host_routes':{'class':OResource, 'fields':{'destination':None,'nexthop':None}},
+        'ip_version':None,#Allowed value : 4(default), 6
+        'ipv6_address_mode':None,#Allowed values: dhcpv6-statefule, dhcpv6-stateless, slaac
+        'ipv6_ra_mode':None,#Allowed values: dhcpv6-stateful, dhcpv6-stateless, slaac
+        'network':'get_resource',#?
+        #'prefixlen':None,#Available since 6.0.0 (Mitaka)
+        #'subnetpool':'get_resource'#Available since 6.0.0 (Mitaka)
+        'tenant_id':None
+        #'value_specs':{...}
+    }
+    hot_type = 'OS::Neutron::Subnet'
+
+class OSNeutronRouter(OSResource):
+    fields = {
+        'osname':None,
+        'admin_state_up':None,#boolean
+        'distributed':None,#boolean
+        'external_gateway_info':{'class':None,'fields':{'enable_snat':None,'network':None}},
+        'ha':None,#boolean
+        'l3_agent_ids':'simple_list'
+        #'value_specs':{...}
+
+    }
+    hot_type = 'OS::Neutron::Router'
+
+class OSNeutronRouterInterface(OSResource):
+    fields = {
+        'osname':None,
+        'router_id': 'get_resource',
+        'subnet': 'get_resource'
+    }
+    hot_type = 'OS::Neutron::RouterInterface'
+
+class OSNovaServer(OSResource):
+    fields = {
+        'osname':None,
+        'flavor':None,#not optional
+        'admin_pass':None,
+        'availability_zone':None,
+        'block_device_mapping':{'class':OSResource,'fields':{
+            'delete_on_termination':None,#boolean
+            'device_name':None,#vda
+            'snapshot_id':None,
+            'volume_id':None,
+            'volume_size':None #GB
+        }},
+        'block_device_mapping_v2':{'class':OSResource,'fields':{
+            'boot_index':None,
+            'delete_on_termination':None,#boolean
+            'device_name':None,
+            'device_type':None,#Allowed values: cdrom, disk
+            'disk_bus':None,#Allowed values: ide, lame_bus, scsi, usb, virtio
+            'image_id':None,
+            'snapshot_id':None,
+            'swap_size':None,
+            'volume_id':None,
+            'volume_size':None
+        }},
+        'config_drive':None,
+        'diskConfig':None,#Allowed values: AUTO, MANUAL
+        'flavor_update_policy':None,#Allowed values: RESIZE(default), REPLACE
+        'image':None,
+        'image_update_policy':None,#Allowed values: REBUILD(default), 
+                                   #REPLACE, REBUILD_PRESERVE_EPHEMERAL
+        'key_name':None,
+        'metadata':None,
+        'networks':{'class':OSResource,'fields':{
+            'fixed_ip':None,
+            'network':'get_resource',
+            'port':'get_resource'
+            #'port_extra_properties':{'class':OSResource,'fields':{}},#Available in 6.0.0 (Mitaka)
+            #'subnet':'get_resource'#Abailable in 5.0.0 (Liberty)
+        }},
+        #'personality':{},#map value expected (not supported yet in sfa)
+        'reservation_id':None,
+        #'scheduler_hints':{},#map value expected (not supported yet in sfa)
+        'security_groups':'simple_list',
+        'software_config_transport':None,#Allowed value: POLL_SERVER_CFN(default), POLL_SERVER_HEAT,
+                                         #POLL_TEMP_URL, ZAQAR_MESSAGE
+        'user_data':None,
+        'user_data_format':None#Allowed value: HEAT_CNFTOOLS(default), RAW, SOFTWARE_CONFIG
+    }
+    hot_type = 'OS::Nova::Server'
 
 class OSNeutronVPNService(OSResource):
     fields = {
-        'name':None,
+        'osname':None,
         'admin_state_up':None,
         'description':None,
         'router':'get_resource',
@@ -63,12 +166,15 @@ class OSNeutronVPNService(OSResource):
 
 class OSNeutronIKEPolicy(OSResource):
     fields = {
-        'name':None,
+        'osname':None,
         'auth_algorith':None,#sha1 only allowed
         'descrition':None,
         'encryption_algorithm':None,#3des, aes-128(defaulted), aes-192, aes-256
         'ike_version':None,#v1(default), v2
-        'lifetime':{'class':None,'fields':{'value':None,'units':None}},#units:seconds(default), kilobytes
+        'lifetime':{'class':None,'fields':{
+            'value':None,
+            'units':None#units:seconds(default), kilobytes
+        }},
         'pfs':None,#group2, group5(default), group14
         'phase1_negotiation_mode':None#main
     }
@@ -76,111 +182,97 @@ class OSNeutronIKEPolicy(OSResource):
 
 class OSNeutronIPsecSiteConnection(OSResource):
     fields = {
-        'name':None,        
-        'admin_state_up': None,
-        'description': None,
-        'dpd': {'class':None, 'fields':{'actions': None, 'interval': None, 'timeout': None}},
-        #actions (clear, disabled, hold, restart, restart-py-peer
-        #interval(default 30) timout(default 120)
-        'ikepolicy_id': None, #not optional
-        'initiator': None,#bi-directinal(default), response-only
-        'ipsecpolicy_id': None, #not optional
-        'mtu': None,#1500(default)
-        'peer_address': None, #not optional
-        'peer_cidrs': 'simple_list',#not optional
-        'peer_id': None,#remote branch router id
-        'psk': None,#
-        'vpnservice_id': 'get_resource'
+        'osname':None,
+        'admin_state_up':None,
+        'description':None,
+        'dpd': {'class':None, 'fields':{
+            'actions':None,#actions (clear, disabled, hold, restart, restart-py-peer
+            'interval':None,#interval(default 30)
+            'timeout':None#timout(default 120)
+        }},
+        'ikepolicy_id':None,#not optionsal
+        'mtu':None,#not optional
+        'peer_address':None,#not optional
+        'peer_cidrs':'simple_list',
+        'peer_id':None,#remote branch router id
+        'psk':None,
+        'vpnservice_id':'get_resource'
     }
     hot_type = 'OS::Neutron::IPsecSiteConnection'
 
-class OSNeutronFirewall(OSRsource):
+class OSNeutronFirewall(OSResource):
     fields = {
-        'admin_state_up': None,
-        'description': None,
-        'firewall_policy_id': None
-        #'shared': Boolean(Available since 2015.1 (Kilo))
-        #'value_specs': {...}(Available since 5.0.0 (Liberty))
+        'osname':None,
+        'admin_state_up':None,
+        'description':None,
+        'firewall_policy_id':None,
+        'shared':None,#Boolean(Available since 2015.1 (Kilo))
+        #'value_specs':{...}(Available since 5.0.0 (Liberty))
     }
     hot_type = 'OS::Neutron::Firewall'
 
 class OSNeutronFirewallPolicy(OSResource):
     fields = {
-        'audited': None,
-        'description': None,
-        'firewall_rules': 'simple_list',
-        'shared': None
+        'osname':None,
+        'audited':None,#boolean
+        'description':None,
+        'firewall_rules':'simple_list',
+        'shared':None
     }
-    hot_type='OS::Neutron::FirewallPolicy'
+    hot_type = 'OS::Neutron::FirewallPolicy'
 
 class OSNeutronFirewallRule(OSResource):
     fields = {
-        'action': None,#Allowed values: allow, deny
-        'description': None,
-        'destination_ip_address': None,
-        'destination_port': None,
-        'enabled': None,
-        'ip_version': None,#Allowed values: 4, 6
-        'protocol': None,#Allowed values: tcp, udp, icmp, any
-        'shared': None,#Whether this rule should be shared across all tenants
-        'source_ip_address': None,
-        'source_port': None
+        'osname':None,
+        'action':None,#Allowed value : allow, deny
+        'description':None,
+        'destination_ip_address':None,
+        'destination_port':None,
+        'enabled':None,
+        'ip_version':None,#Allowed value : 4, 6
+        'protocol':None,#Allowed value : tcp, udp, icmp, any
+        'shared':None,#whether this rule should be shared acress all tenants
+        'source_ip_address':None,
+        'source_port':None
     }
-    hot_type = 'OS::Neutron::FirewallRule'
-
-class OSNeutronFloatingIP(OSResource):
-    fields = {
-        'fixed_ip_address': None,
-        'floating_ip_address': None,#Available since 5.0.0 (Liberty)
-        'floating_network': 'get_resource',
-        'port_id': 'ger_resource'#String(Value must be of type neutron.port)
-        #'value_specs': {...}
-    }
-    hot_type = 'OS::Neutron::FloatingIP'
-
-class OSNeutronFloatingIPAssociation(OSResource):
-    fields = {
-        'fixed_ip_address': None,
-        'floatingip_id': None,#not optional
-        'port_id': 'get_resource'#not optional
-    }
-    hot_type = 'OS::Neutron::FloatingIPAssociation'
+    hot_type = 'OS::Neutron::FirewallRull'
 
 class OSNeutronLoadBalancer(OSResource):
     fields = {
-        'members': 'simple_list',
-        'pool_id': None,
-        'protocol_port': None#0 to 65535
+        'osname':None,
+        'members':'simple_list',
+        'pool_id':None,
+        'protocol_pot':None#0 to 65535
     }
     hot_type = 'OS::Neutron::LoadBalancer'
 
 class OSNeutronPool(OSResource):
     fields = {
+        'osname':None,
         'admin_state_up':None,#boolean
         'description':None,
-        'lb_method':None,#not optional Allowed values: ROUND_ROBIN, LEAST_CONNECTIONS, SOURCE_IP
+        'lb_method':None,#not optional Allowed values : ROUND_ROBIN, LEAST_CONNECTIONS, SOURCE_IP
         'monitors':'simple_list',
-        'protocol':None,#not optional Allowed values: TCP, HTTP, HTTPS
         #'provider':'get_resource',#Available since 5.0.0 (Liberty)
         'subnet':None,#not optional
-        'vip':{
+        'vip':{'class':None, 'fields':{
             'address':None,
             'admin_state_up':None,#boolean
             'connection_limit':None,
             'description':None,
-            'name':None,
+            'osname':None,
             'protocol_port':None,
-            'session_persistence':{
+            'session_persistence':{ 'class':None,'fields':{
                 'cookie_name':None,#not optional if type is APP_COOKIE
                 'type':None#Allowed values: SOURCE_IP, HTTP_COOKIE, APP_COOKIE
-            },
-            'subnet':'get_resource'
-        }
+            }}
+        }}
     }
     hot_type = 'OS::Neutron::Pool'
 
 class OSNeutronPoolMember(OSResource):
     fields = {
+        'osname':None,
         'address':None,#not optional
         'admin_state_up':None,#boolean
         'pool_id':None,#not optional
@@ -191,9 +283,10 @@ class OSNeutronPoolMember(OSResource):
 
 class OSNeutronHealthMonitor(OSResource):
     fields = {
+        'osname':None,
         'admin_state_up':None,
-        'delay':None,#not optional
-        'expected_codes':None,#list of HTTP status codes expected in response
+        'delay':None, #not_optional
+        'expected_codes':None, #'simple_list'? list of HTTP status codes expected in responce
         'http_method':None,
         'max_retries':None,
         'timeout':None,#not optional
@@ -202,84 +295,53 @@ class OSNeutronHealthMonitor(OSResource):
     }
     hot_type = 'OS::Neutron::HealthMonitor'
 
-"""
-class (OSResource):
+class OSNeutronFloatingIP(OSResource):
     fields = {
+        'osname':None,
+        'fixed_ip_address':None,
+        'floating_ip_address':None,#Available since 5.0.0 (Liberty)
+        'floating_network':'get_resource',
+        'port_id':'get_resource'
+        #'value_specs':{...}
     }
-    hot_type = ''
-"""
+    hot_type = 'OS::Neutron::FloatingIP'
 
-class OSNeutronNet(OSResource):
+class OSNeutronFloatingIPAssociation(OSResource):
     fields = {
-        'name':None,
-        'tenant_id': None 
+        'osname':None,
+        'fixed_ip_address':None,
+        'floatingip_id':None,
+        'port_id':'get_resource'
     }
-    hot_type = 'OS::Neutron::Net'
-
-class OSNeutronSubnet(OSResource):
-    fields = {
-        'name':None,
-        'cidr':None,
-        'tenant_id':None, 
-        'network':'get_resource',
-        'ip_version':None,
-        'enable_dhcp':None,
-        'gateway_ip':None,
-        'dns_nameservers':'simple_list',
-        'allocation_pools':{'class':OSResource,'fields':{'start':None,'end':None}}
-    }
-    hot_type = 'OS::Neutron::Subnet'
-
-class OSNeutronRouter(OSResource):
-    fields = {
-        'name':None,
-        'admin_state_up':None,
-        'external_gateway_info':{'class':None,'fields':{'enable_snat':None,'network':None}}
-    }
-    hot_type = 'OS::Neutron::Router'
-
-class OSNeutronRouterInterface(OSResource):
-    fields = { 
-        'name':None,
-        'router_id': 'get_resource', 
-        'subnet': 'get_resource' 
-    }
-    hot_type = 'OS::Neutron::RouterInterface'
-
-class OSNovaServer(OSResource):
-    fields = {
-        'name':None,
-        'flavor':None,
-        'image':None,
-        'networks':{'class':OSResource,'fields':{'network':'get_resource'}},
-        'availability_zone':None,
-        'key_name':None,
-        'security_groups':'simple_list'
-    }
-    hot_type = 'OS::Nova::Server'
+    hot_type = 'OS::Neutron::FloatingIPAssociation'
 
 class OSSliver(Element):
     fields = {
         'component_id':None,
         'sliver_name':None, 
-        'sliver_type':None, 
+        'sliver_type':None,
+ 
         'network':OSNeutronNet,
         'router':OSNeutronRouter,
         'subnet':OSNeutronSubnet,
         'router_interface':OSNeutronRouterInterface,
         'server':OSNovaServer,
+
         'vpnservice':OSNeutronVPNService,
         'ikepolicy':OSNeutronIKEPolicy,
         'ipSecSiteConnection':OSNeutronIPsecSiteConnection,
         'firewall':OSNeutronFirewall,
         'firewallpolicy':OSNeutronFirewallPolicy,
-        'firewallrull':OSNeutronFirewallRule,
-        'floatingip':OSNeutronFloatingIP,
-        'floatingipAssociation':OSNeutronFloatingIPAssociation,
+        'firewallrule':OSNeutronFirewallRule,
         'loadbalancer':OSNeutronLoadBalancer,
         'pool':OSNeutronPool,
         'poolmember':OSNeutronPoolMember,
-        'healthmonitor':OSNeutronHealthMonitor
+        'healthmonitor':OSNeutronHealthMonitor,
+
+        ######It's not required in SFA ->not tested######
+        'floatingip':OSNeutronFloatingIP,
+        'floatingipAssociation':OSNeutronFloatingIPAssociation
+        ##################################################
     }
 
     def to_hot(self, arg_dict):# hot yaml(x) hot json(o)
