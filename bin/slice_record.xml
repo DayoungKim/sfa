@@ -1,0 +1,5 @@
+<record hrn="slice_name" type="slice"
+    description="A slice for sfa user"
+    url="http://127.0.0.1:12347">
+    <reg-researchers>auth.user.name</reg-researchers>
+</record>

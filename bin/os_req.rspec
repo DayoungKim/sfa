@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rspec xmlns="http://www.geni.net/resources/rspec/3"
+       xmlns:openstack="http://203.255.254.100:8888/resources/sfa/rspecs/openstack" 
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xsi:schemaLocation="http://www.geni.net/resources/rspec/3/request.xsd http://203.255.254.100:8888/resources/sfa/rspecs/openstack/openstack.xsd"
+       type="request"> 
+  <node component_id="urn:publicid:IDN+koren+node+openstack" component_manager_id="urn:publicid:IDN+koren+authority+am">
+    <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" 
+                      sliver_name="sliver1" sliver_type="heat stack">
+
+      <openstack:network osname='private1'/>
+
+      <openstack:router osname='router1'>
+        <openstack:external_gateway_info network='public'/>
+      </openstack:router>
+
+      <openstack:subnet osname='subnet1' cidr='10.0.0.0/24' network='private1' ip_version='4' enable_dhcp='True' gateway_ip='10.0.0.1'>
+        <openstack:dns_nameservers value='163.126.63.1'/>
+        <openstack:dns_nameservers value='8.8.8.8'/>
+        <openstack:allocation_pools start='10.0.0.10' end='10.0.0.20'/>
+      </openstack:subnet>
+
+      <openstack:router_interface osname='router_interface1' router_id='router1' subnet='subnet1'/>
+
+      <openstack:server osname='vm1' flavor='m1.tiny' image='cirros-0.3.4-x86_64-uec-ramdisk' availability_zone='nova'>
+        <openstack:networks network='private1'/>
+        <openstack:security_groups value='default'/>
+      </openstack:server>
+
+    </openstack:sliver>
+  </node>
+</rspec>
