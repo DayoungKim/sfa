@@ -19,7 +19,7 @@ git clone https://github.com/DayoungKim/sfa
 
 chmod 777 sfa
 
-cd sfa/sfa
+cd sfa/bin
 
 sfaadmin.py reg nuke
 
