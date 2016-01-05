@@ -1261,10 +1261,10 @@ use this if you mean an authority instead""")
         creds = [self.slice_credential(slice_hrn)]
 
         delegated_cred = None
-        if server_version.get('interface') == 'slicemgr':
+        #if server_version.get('interface') == 'slicemgr':
             # delegate our cred to the slice manager
             # do not delegate cred to slicemgr...not working at the moment
-            pass
+            #pass
             #if server_version.get('hrn'):
             #    delegated_cred = self.delegate_cred(slice_cred, server_version['hrn'])
             #elif server_version.get('urn'):

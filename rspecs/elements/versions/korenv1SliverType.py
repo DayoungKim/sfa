@@ -86,7 +86,6 @@ class Korenv1SliverType:
     
     @staticmethod
     def get_os_sliver_attributes(xml, filter=None):
-        import pdb; pdb.set_trace()
         if filter is None: filter={}
         xpath = './openstack:*'
         sliver_attrib_elems = xml.xpath(xpath)

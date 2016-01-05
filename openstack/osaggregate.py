@@ -337,147 +337,6 @@ class OSAggregate:
         
         return rspec_nodes
 
-    #TODO : get network config from rspec
-    #current : read file via OSConfig 
-    def create_network(self, tenant_id):
-        is_network = False
-        networks = self.driver.shell.network_manager.list_networks()
-        networks = networks['networks']
-        for network in networks:
-            if network.get('tenant_id') == tenant_id:
-#                network_id = network.get('id')
-#                net_info = self.driver.shell.network_manager.show_network(network_id)
-                net_dict = {}#net_info['network']
-                is_network = True
-
-        time.sleep(5)  # This reason for waiting is that OS can't quickly handle "create API".
-        if not is_network:
-            config = OSConfig() # TODO : Change part
-            # Check type of tenant network in Openstack\
-            type = config.get('network', 'type').lower()
-            """
-            if type == 'vlan':
-                phy_int = config.get('network:vlan', 'physical_network')
-                seg_id = int(config.get('network:vlan', 'segmentation_id'))
-                n_body = {'network': {'name': 'private', 'tenant_id': tenant_id,
-                                      'provider:network_type': 'vlan',
-                                      'provider:physical_network': phy_int,
-                                      'provider:segmentation_id': seg_id} }
-            elif type == 'flat':
-                n_body = { 'network': {'name': 'private', 'tenant_id': tenant_id} }
-            elif type == 'local':
-                n_body = { 'network': {'name': 'private', 'tenant_id': tenant_id} }
-            elif type == 'vxlan_gre':
-                n_body = { 'network': {'name': 'private', 'tenant_id': tenant_id} }
-            else:
-                logger.error('You need to write the information in /etc/sfa/network.ini')
-            # create a new network
-            new_net = self.driver.shell.network_manager.create_network(body=n_body)
-            net_dict = new_net['network']
-            logger.info("Created a network [%s] as below" % net_dict['name'])
-            logger.info(net_dict)
-            """
-            is_dhcp = bool(config.get('subnet', 'enable_dhcp'))
-            net_dict = {
-                'private':{
-                    'type':'OS::Neutron::Net',
-                    'properties':{
-                        'tenant_id':tenant_id
-                    }
-                },
-                "%s"%config.get('subnet','name'):{
-                    'type':'OS::Neutron::Subnet',
-                    'properties':{
-                        'cidr':config.get('subnet', 'cidr'),
-                        'tenant_id':tenant_id,
-                        'network':{'get_resource':'private'},
-                        'ip_version':config.get('subnet', 'version'),
-                        'dns_nameservers':config.get('subnet', 'dns_nameservers').split(),
-                        'enable_dhcp':is_dhcp,
-                        'allocation_pools':[{
-                            'start' :config.get('subnet', 'allocation_start') if is_dhcp else None,
-                            'end' :config.get('subnet', 'allocation_end') if is_dhcp else None
-                        }],
-                        'gateway_ip':config.get('subnet', 'gateway_ip')
-                    }
-                }
-            }
-            """
-            sn_body = {'subnets': [{ 'name': sub_name, 'cidr': cidr,
-                                     'tenant_id': tenant_id, 'network_id': network_id,
-                                     'ip_version': version, 'enable_dhcp': is_dhcp,
-                                     'gateway_ip': gw_ip, 'dns_nameservers': dns_servers,
-                                     'allocation_pools': [{'start': alloc_start, 'end': alloc_end}] }]}
-            new_subnet = self.driver.shell.network_manager.create_subnet(body=sn_body)
-            logger.info("Created a subnet of network [%s] as below" % net_dict['name'])
-            logger.info(new_subnet)
-            """
-
-        return net_dict
-
-    def create_router(self, tenant_id):
-        is_router = True
-        # checking whether the created router exist
-        routers = self.driver.shell.network_manager.list_routers()
-        routers = routers['routers']
-        for router in routers:
-            if router.get('tenant_id') == tenant_id:
-                router_id = router.get('id')
-                router = self.driver.shell.network_manager.show_router(router_id)
-                is_router = False
-
-        if is_router:
-            config = OSConfig()
-            router = {
-                'router':{
-                    'type':'OS::Neutron::Router',
-                    'properties':{
-                        'admin_state_up':True,
-                        'external_gateway_info':{'network':'public'}
-                    }
-                },
-                'router_interface':{
-                    'type':'OS::Neutron::RouterInterface',
-                    'properties':{
-                        'router_id':{'get_resource':'router'},
-                        'subnet':{'get_resource':config.get('subnet','name')}
-                    }
-                }
-            }
-            """
-            # Information of public network(external network) from configuration file
-            extnet_name = config.get('network', 'external_network_name')
-            # find the network information related with a new interface
-            networks = self.driver.shell.network_manager.list_networks()
-            networks = networks['networks']
-            for network in networks:
-                if (network.get('name') == extnet_name) or \
-                   (network.get('name') == 'public') or (network.get('name') == 'ext-net'):
-                    pub_net_id = network.get('id')
-
-            # Information of subnet network name from configuration file
-            subnet_name = config.get('subnet', 'name')
-            subnets = self.driver.shell.network_manager.list_subnets()
-            subnets = subnets['subnets']
-            for subnet in subnets:
-                if ((subnet.get('name') == subnet_name) or (subnet.get('name') == 'private-subnet')) and \
-                   (subnet.get('tenant_id') == tenant_id):
-                    pri_sbnet_id = subnet.get('id')
-
-            # create a router and connect external gateway related with public network
-            r_body = {'router': {'name': 'router', 'admin_state_up': True,
-                                 'external_gateway_info':{'network_id': pub_net_id}}}
-            router = self.driver.shell.network_manager.create_router(body=r_body)
-
-            # create a internal port of the router
-            router_id = router['router']['id']
-            int_pt_body = {'subnet_id': pri_sbnet_id}
-            int_port = self.driver.shell.network_manager.add_interface_router(
-                                                         router=router_id, body=int_pt_body)
-            logger.info("Created a router with interfaces")
-            """
-        return router
-
     def create_tenant(self, tenant_name, description=None):
         tenants = self.driver.shell.auth_manager.tenants.findall(name=tenant_name)
         if not tenants:
@@ -601,126 +460,35 @@ class OSAggregate:
 
     def run_instances(self, tenant_name, user_name, rspec, key_name, pubkeys):
         # TODO : Kulcloud
-        # It'll use Openstack admin info. as authoirty
         zones = self.get_availability_zones()
-        # add the sfa admin user to this tenant and update our Openstack client connection
-        # to use these credentials for the rest of this session. This emsures that the instances
-        # we create will be assigned to the correct tenant.
-        #self.driver.shell.compute_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
-        #self.driver.shell.network_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
-        # Get slice's token, endpoint 
-        #self.driver.shell.auth_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
-        #token = self.driver.shell.auth_manager.auth_token
-        #endpoint = self.driver.shell.auth_manager.auth_ref.service_catalog.get_urls(service_type='orchestration')[0]
-        #
         self.driver.shell.auth_manager.connect()
         logger.info( "Checking if the created tenant[%s] or not ..." % tenant_name )
         tenant = self.driver.shell.auth_manager.tenants.find(name=tenant_name)
-        ##HEAT##
-        self.driver.shell.orchest_manager.connect(username=user_name, tenant=tenant_name, password=user_name)#,token=token,endpoint=endpoint)
-
+        self.driver.shell.orchest_manager.connect(username=user_name, 
+                                                  tenant=tenant_name, 
+                                                  password=user_name)
         if len(pubkeys):
             files = None
         else:
             authorized_keys = "\n".join(pubkeys)
             files = {'/root/.ssh/authorized_keys': authorized_keys}
-
-
-        #net_dict = self.create_network(tenant_id=tenant.id) #TODO : Network creation
-        #router = self.create_router(tenant_id=tenant.id) #TODO : Router creation
-#        nics=[{'net-id': net_dict['id']}]
-
-        # Iterate over clouds/zones/nodes
         slivers = []
         rspec = RSpec(rspec)     # TODO  XML Input
         for node in rspec.version.get_nodes_with_slivers():
             instances = node.get('slivers', [])
             for instance in instances:
-                """
-                server_name = instance['sliver_name']
-                # Check if instance exists or not
-                servers = self.driver.shell.compute_manager.servers.findall(name=server_name)
-                if len(servers) != 0:
-                    for server in servers:
-                        slivers.append(server)
-                        logger.info("The server[%s] already existed ..." % server.name)
-                    continue
-                """
                 try:
-                    """ 
-                    flavor = self.driver.shell.compute_manager.flavors.find(name=instance['flavor']['name'])
-                    image = self.driver.shell.compute_manager.images.find(name=instance['boot_image']['name'])
-                    zone_name = instance['availability_zone']['name']
-                    for zone in zones:
-                        if zone == zone_name:
-                            break
-                    else:
-                        logger.warn("The requested zone_name[%s] is invalid ... So it's changed " % zone_name)
-                        zone_name = zone
-
-                    group_names=[]   
-                    for sec_group in self.driver.secgroups_with_rules(instance['security_groups']):
-                        group_names.append(sec_group.name)
-
-                    metadata = {}
-                    if node.get('component_id'):
-                        metadata['component_id'] = node['component_id']
-                    if node.get('component_manager_id'):
-                        metadata['component_manager_id'] = node['component_manager_id']
-                    # Create a server for the user
-                    heat_dict = {
-                        'heat_template_version':"2013-05-23",
-                        'description': metadata,
-                        'resources': {
-                            "%s"%server_name : {
-                                'type': 'OS::Nova::Server',
-                                'properties':{
-                                    'flavor':flavor.name,
-                                    'image':image.name,
-                                    'networks':[{'network':{'get_resource':'private'}}],
-                                    #TODO : change 'private' to get network name from rspec
-                                    'availability_zone':zone_name,
-                                    'key_name':key_name,
-                                    'security_groups':group_names
-                                }
-                                ,'metadata':metadata
-                            }
-                        }
-                    }
-                    heat_dict['resources'].update(net_dict)
-                    heat_dict['resources'].update(router)
-                    ##HEAT##
-                    import pdb; pdb.set_trace()
-                    server = self.driver.shell.orchest_manager.stacks.create(
-                            stack_name=user_name,
-                            template=json.dumps(heat_dict))
-                    server = self.driver.shell.orchest_manager.stacks.get(server['stack']['id'])
-                    #server = self.check_stack_status(server)
-                    server = self.driver.shell.compute_manager.servers.create(
-                                                               flavor=flavor.id,
-                                                               image=image.id,
-                                                               nics=nics,
-                                                               availability_zone=zone_name,
-                                                               key_name=key_name,
-                                                               security_groups=group_names,
-                                                               meta=metadata,
-                                                               name=server_name)
-#                                                               files=files,
-                    server = self.check_server_status(server)
-                    """
-                    sliver_name, sliver_heat_dict = instance.to_hot(arg_dict={'tenant_id':tenant.id,
-                                                                              'key_name':key_name})
+                    sliver_name, sliver_heat_dict = instance.to_hot(arg_dict={'tenant_id':tenant.id})
+                    print sliver_heat_dict
                     sliver = self.driver.shell.orchest_manager.stacks.create(
                                 stack_name=sliver_name,
                                 template=json.dumps(sliver_heat_dict))
                     print sliver
                     sliver = self.driver.shell.orchest_manager.stacks.get(sliver['stack']['id'])
-                    #sliver = self.check_stack_status(sliver)
                     slivers.append(sliver)
                     logger.info("Created Openstack instance [%s]" % sliver_name)
                 except Exception, err:
                     logger.log_exc(err)
-
         return slivers 
 
     def delete_instance(self, instance):

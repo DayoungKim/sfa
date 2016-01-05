@@ -6,7 +6,7 @@
        type="request"> 
   <node component_id="urn:publicid:IDN+koren+node+openstack" component_manager_id="urn:publicid:IDN+koren+authority+am">
     <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" 
-                      sliver_name="sliver1" sliver_type="heat stack">
+                      sliver_name="sliver11" sliver_type="heat stack">
       <openstack:network osname='private1'/>
       <openstack:router osname='router1'>
         <openstack:external_gateway_info network='public'/>
@@ -23,7 +23,11 @@
         <openstack:networks network='private1'/>
         <openstack:security_groups value='default'/>
       </openstack:server>
+      <openstack:vpnservice osname='vpn11' router='router1' subnet='subnet1'/>
+    </openstack:sliver> 
 
+    <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" 
+                      sliver_name="sliver22" sliver_type="heat stack">
       <openstack:network osname='private2'/>
       <openstack:router osname='router2'>
         <openstack:external_gateway_info network='public'/>
@@ -40,15 +44,8 @@
         <openstack:networks network='private2'/>
         <openstack:security_groups value='default'/>
       </openstack:server>
+      <openstack:vpnservice osname='vpn22' router='router2' subnet='subnet2'/>
     </openstack:sliver>
 
-    <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" 
-                      sliver_name="sliver3" sliver_type="heat stack">
-        <openstack:firewallrule osname='fwrule' protocol='tcp' destination_port='80' action='allow'/>
-        <openstack:firewallpolicy osname='fwpolicy'>
-            <openstack:firewall_rules value='fwrule'/>
-        <openstack:firewallpolicy/>
-        <openstack:firewall osname='fw' firewall_policy_id='fwpolicy'/>
-    </openstack:sliver>
   </node>
 </rspec>

@@ -1,4 +1,5 @@
 from sfa.rspecs.elements.element import Element  
+import types
 
 class OSResource(Element):
     
@@ -26,9 +27,14 @@ class OSResource(Element):
         properties = {}
         for key, value in self.items():
             if value:
-                if hasattr(value, 'to_hot'):
+                if isinstance(self.fields[key], type):
                     properties.update({key:value.to_hot(arg_dict)})
-                else:
+                elif isinstance(self.fields[key], types.DictType):
+                    if self.fields[key]['class']:#list of dict
+                        properties.update({key:[v.to_hot(arg_dict)for v in value]})
+                    else:#single dict
+                        properties.update({key:value.to_hot(arg_dict)})
+                else:#None, get_resource, simple_list
                     properties.update({key:value})
             else:
                 if key in arg_dict: 
@@ -38,7 +44,8 @@ class OSResource(Element):
             return properties
 
         properties.pop('osname')
-        return {
+        if properties == {}: return {self['osname']:{'type':self.hot_type}}
+        return { 
             self['osname']:{
                 'type':self.hot_type,
                 'properties':properties
@@ -47,6 +54,7 @@ class OSResource(Element):
 """
 class (OSResource):
     fields = {
+        'osname':None,
     }
     hot_type = ''
 """
@@ -70,7 +78,7 @@ class OSNeutronSubnet(OSResource):
         'dns_nameservers':'simple_list',
         'enable_dhcp':None,#boolean default True
         'gateway_ip':None,
-        'host_routes':{'class':OResource, 'fields':{'destination':None,'nexthop':None}},
+        'host_routes':{'class':OSResource, 'fields':{'destination':None,'nexthop':None}},
         'ip_version':None,#Allowed value : 4(default), 6
         'ipv6_address_mode':None,#Allowed values: dhcpv6-statefule, dhcpv6-stateless, slaac
         'ipv6_ra_mode':None,#Allowed values: dhcpv6-stateful, dhcpv6-stateless, slaac
@@ -167,16 +175,32 @@ class OSNeutronVPNService(OSResource):
 class OSNeutronIKEPolicy(OSResource):
     fields = {
         'osname':None,
-        'auth_algorith':None,#sha1 only allowed
-        'descrition':None,
-        'encryption_algorithm':None,#3des, aes-128(defaulted), aes-192, aes-256
-        'ike_version':None,#v1(default), v2
-        'lifetime':{'class':None,'fields':{
-            'value':None,
-            'units':None#units:seconds(default), kilobytes
+        'auth_algorithm':None,#Allowed value : sha1(default)
+        'description':None,
+        'encryption_algorithm':None,#Allowed value : 3des, aes-128(default), aes-192, aes-256
+        'ike_version':None,#Allowed value : v1(default), v2
+        'lifetime':{'class':None, 'fields':{
+            'units':None,#Allowed value : seconds(defulat), kilobytes
+            'value':None#default 3600
         }},
-        'pfs':None,#group2, group5(default), group14
-        'phase1_negotiation_mode':None#main
+        'pfs':None,#Allowed value : group2, group5(default), group14
+        'phase1_negotiation_mode':None#main(default)
+    }
+    hot_type = 'OS::Neutron::IKEPolicy'
+
+class OSNeutronIPsecPolicy(OSResource):
+    fields = {
+        'osname':None,
+        'auth_algorithm':None,#Allowed value : sha1(default)
+        'description':None,
+        'encapsulation_mode':None,#Allowed value : tunnel, transport
+        'encryption_algorithm':None,#Allowed value : 3des, aes-128(default), aes-192, aes-256
+        'lifetime':{'class':None, 'fields':{
+            'unit':None,#Allowed value : seconds(default), kilobytes
+            'value':None #default 3600
+        }},
+        'pfs':None,#Allowed value : group2, group5(default), group14
+        'transport_protocol':None #Allowed value : esp(default), ah, ah-esp
     }
     hot_type = 'OS::Neutron::IPsecPolicy'
 
@@ -190,13 +214,14 @@ class OSNeutronIPsecSiteConnection(OSResource):
             'interval':None,#interval(default 30)
             'timeout':None#timout(default 120)
         }},
-        'ikepolicy_id':None,#not optionsal
+        'ikepolicy_id':'get_resource',#not optionsal
+        'ipsecpolicy_id':'get_resource',#not optional
         'mtu':None,#not optional
         'peer_address':None,#not optional
         'peer_cidrs':'simple_list',
         'peer_id':None,#remote branch router id
         'psk':None,
-        'vpnservice_id':'get_resource'
+        'vpnservice_id':None
     }
     hot_type = 'OS::Neutron::IPsecSiteConnection'
 
@@ -205,7 +230,7 @@ class OSNeutronFirewall(OSResource):
         'osname':None,
         'admin_state_up':None,
         'description':None,
-        'firewall_policy_id':None,
+        'firewall_policy_id':'get_resource',
         'shared':None,#Boolean(Available since 2015.1 (Kilo))
         #'value_specs':{...}(Available since 5.0.0 (Liberty))
     }
@@ -216,7 +241,9 @@ class OSNeutronFirewallPolicy(OSResource):
         'osname':None,
         'audited':None,#boolean
         'description':None,
-        'firewall_rules':'simple_list',
+        'firewall_rules':{'class':OSResource, 'fields':{
+            'get_resource':None
+        }},
         'shared':None
     }
     hot_type = 'OS::Neutron::FirewallPolicy'
@@ -235,7 +262,7 @@ class OSNeutronFirewallRule(OSResource):
         'source_ip_address':None,
         'source_port':None
     }
-    hot_type = 'OS::Neutron::FirewallRull'
+    hot_type = 'OS::Neutron::FirewallRule'
 
 class OSNeutronLoadBalancer(OSResource):
     fields = {
@@ -329,7 +356,8 @@ class OSSliver(Element):
 
         'vpnservice':OSNeutronVPNService,
         'ikepolicy':OSNeutronIKEPolicy,
-        'ipSecSiteConnection':OSNeutronIPsecSiteConnection,
+        'ipsecpolicy':OSNeutronIPsecPolicy,
+        'ipsecsiteconnection':OSNeutronIPsecSiteConnection,
         'firewall':OSNeutronFirewall,
         'firewallpolicy':OSNeutronFirewallPolicy,
         'firewallrule':OSNeutronFirewallRule,

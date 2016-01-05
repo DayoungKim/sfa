@@ -6,6 +6,7 @@ import types
 
 class Korenv2SliverType:
 
+    #TODO
     @staticmethod
     def add_os_slivers(xml, slivers):
         if not slivers:
@@ -69,12 +70,8 @@ class Korenv2SliverType:
     @staticmethod
     def get_os_slivers(xml, filter=None):
         if filter is None: filter={}
-        #xpath = './openstack:'
-        #sliver_elems = xml.xpath(xpath)
-        return Korenv2SliverType.get_os_element(xml.xpath("./openstack:sliver"), 
-                                                OSSliver)
-        
-    
+        return Korenv2SliverType.get_os_element(xml.xpath("./openstack:sliver"), OSSliver)
+
     @staticmethod    
     def get_os_element (rspec_nodes, OSNodeClass, fields=None):
         if len(rspec_nodes) == 0: 
@@ -82,41 +79,39 @@ class Korenv2SliverType:
         ret_list = []
         if fields == None: fields = OSNodeClass.fields
         for rspec_node in rspec_nodes:
-            #os_node = OSNodeClass(rspec_node.attrib)
             os_node = OSNodeClass(fields)
             for tag, value in fields.items() : 
+                os_node[tag]=None
                 if isinstance(value, type):
-                    #1. openstack resource type (OSResource, must contain name and OS::type)
+                    #1. openstack resource type
                     os_node[tag] = Korenv2SliverType.get_os_element(
                                         rspec_node.xpath("./openstack:%s"%tag), 
                                         value, fields=None)
                 elif isinstance(value, types.DictType):
                     if value['class']:
-                        #1. form of list of element [{...}, ...] type (Element)
+                        #2. form of list of element [{...}, ...]
                         os_node[tag]= Korenv2SliverType.get_os_element(
                                             rspec_node.xpath("./openstack:%s"%tag),
                                             value['class'], fields=value['fields'])
                     else : 
-                        #2. form of single element {k1:value,k2:elem,...}
+                        #3. form of single element {...}
                         dummy_node = Korenv2SliverType.get_os_element(
                                             rspec_node.xpath("./openstack:%s"%tag),
                                             OSResource, fields=value['fields'])
                         if dummy_node: os_node[tag]=dummy_node[0]
                 elif isinstance(value, types.StringType):
-                    #1. hot function type (value=='get_resource', ...)
-                    #   entering existing resource_id(uuid) is not allowed!!!!
                     if value == 'get_resource':
-                        if tag in rspec_node.attrib : os_node[tag]={value:rspec_node.attrib[tag]}
-                    #2. simple list type [value, ... ]
+                        #4. hot function type (value=='get_resource', ...)
+                        if tag in rspec_node.attrib : 
+                            os_node[tag]={value:rspec_node.attrib[tag]}
                     elif value == 'simple_list':
+                        #5. simple list type [value, ... 
                         dummy_nodes = Korenv2SliverType.get_os_element(
                                         rspec_node.xpath("./openstack:%s"%tag),
                                         OSResource, fields={'value':None})
                         if dummy_nodes: 
                             os_node[tag] = [dummy_node['value'] for dummy_node in dummy_nodes]
-                else: #elif isinstance(value, types.NoneType):
-                    # xml attribute / simple str, int, bool
+                else: # 6. xml attribute / simple str, int, bool
                     if tag in rspec_node.attrib: os_node[tag]=rspec_node.attrib[tag]
-                    else : os_node[tag]=None
             ret_list.append(os_node)
         return ret_list
