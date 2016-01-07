@@ -6,67 +6,48 @@ import types
 
 class Korenv2SliverType:
 
-    #TODO
     @staticmethod
     def add_os_slivers(xml, slivers):
         if not slivers:
             return 
         if not isinstance(slivers, list):
             slivers = [slivers]
+        sliver_elem = xml.add_element('{%s}sliver' %xml.namespaces['openstack'])
+        ret = Korenv2SliverType.get_os_sliver_nodes(sliver_elem, slivers, OSSliver)
+        return ret
+        #return Korenv2SliverType.get_os_sliver_nodes(sliver_elem, slivers, OSSliver)
+
+    @staticmethod
+    def get_os_sliver_nodes(xml, slivers, OSNodeClass=None, fields=None):
+        if len(slivers) == 0: 
+            return None
+        if fields==None : fields = OSNodeClass.fields
         for sliver in slivers:
-            sliver_elem = xml.add_element('{%s}sliver' % xml.namespaces['openstack'])
-            attrs = ['component_id', 'sliver_id', 'sliver_name', 'sliver_type']
-            for attr in attrs:
-                if sliver.get(attr):
-                    sliver_elem.set(attr, sliver[attr])
-           
-            availability_zone = sliver['availability_zone']
-            if availability_zone and isinstance(availability_zone, dict):
-                sliver_elem.add_instance('{%s}availability_zone' % xml.namespaces['openstack'], \
-                                         availability_zone, OSZone.fields)
+            for key, value in sliver.items():
+                if value:
+                    if isinstance(fields[key], type):
+                        os_elem = xml.add_element('{%s}%s' %(xml.namespaces['openstack'], key))
+                        Korenv2SliverType.get_os_sliver_nodes(xml=os_elem, 
+                                                              slivers=value, 
+                                                              OSNodeClass=fields[key])
+                    elif isinstance(fields[key], types.DictType):
+                        os_elem = xml.add_element('{%s}%s' %(xml.namespaces['openstack'], key))
+                        if fields[key]['class']:
+                            Korenv2SliverType.get_os_sliver_nodes(os_elem, value, None, 
+                                                                  fields[key]['fields'])
+                        else:
+                            Korenv2SliverType.get_os_sliver_nodes(os_elem, [value], None, 
+                                                                  fields[key]['fields'])
+                    elif isinstance(fields[key], types.StringType):
+                        if fields[key] == 'get_resource':
+                            xml.set(key, value['get_resource'])
+                        elif fields[key] == 'simple_list':
+                            for v in value:
+                                os_elem = xml.add_element('{%s}%s' %(xml.namespaces['openstack'], key))
+                                os_elem.set('value', v)
+                    else:
+                        xml.set(key, value)
 
-            security_groups = sliver['security_groups']
-            if security_groups and isinstance(security_groups, list):
-                for security_group in security_groups:
-                    if security_group.get('rules'):
-                        rules = security_group.pop('rules')
-                    group_sliver_elem = sliver_elem.add_instance('{%s}security_group' % xml.namespaces['openstack'], \
-                                                                 security_group, OSSecGroup.fields)
-                    if rules and isinstance(rules, list):
-                        for rule in rules:
-                            group_sliver_elem.add_instance('{%s}rule' % xml.namespaces['openstack'], \
-                                                           rule, OSSecGroupRule.fields)
-
-            flavor = sliver['flavor']
-            if flavor and isinstance(flavor, dict):
-                flavor_sliver_elem = sliver_elem.add_instance('{%s}flavor' % xml.namespaces['openstack'], \
-                                                              flavor, OSFlavor.fields)
-                boot_image = sliver.get('boot_image')
-                if boot_image and isinstance(boot_image, dict):
-                    flavor_sliver_elem.add_instance('{%s}image' % xml.namespaces['openstack'], \
-                                                    boot_image, OSImage.fields)    
-
-            images = sliver['images']
-            if images and isinstance(images, list):
-                for image in images:
-                    # Check if the minimum quotas requested is suitable or not
-                    if image['minRam'] <= flavor_sliver_elem.attrib['ram'] and \
-                       image['minDisk'] <= flavor_sliver_elem.attrib['storage']:
-                        flavor_sliver_elem.add_instance('{%s}image' % xml.namespaces['openstack'], \
-                                                        image, OSImage.fields)
-
-            addresses = sliver['addresses']
-            if addresses and isinstance(addresses, list):
-                for address in addresses:
-                    # Check if the type of the address
-                    if address.get('private'):
-                        sliver_elem.add_instance('{%s}address' % xml.namespaces['openstack'], \
-                                                 address.get('private'), OSSliverAddr.fields)
-                    elif address.get('public'):
-                        sliver_elem.add_instance('{%s}address' % xml.namespaces['openstack'], \
-                                                 address.get('public'), OSSliverAddr.fields)
-
-                        
     @staticmethod
     def get_os_slivers(xml, filter=None):
         if filter is None: filter={}

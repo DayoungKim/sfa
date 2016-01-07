@@ -16,29 +16,31 @@ class OSResource(Element):
     fields = {}
     hot_type = None
 
-    def __init__(self, fields=None, element=None, keys=None, hot_type=None):
-        Element.__init__(self, fields, element, keys)
+    def __init__(self, fields=None, hot_type=None, template=None, name=None):
         if fields: self.fields = fields 
+        Element.__init__(self)
         if hot_type: self.hot_type = hot_type
+        if name:
+            self['osname']=name
+        if template:
+            self.to_element(template)
 
-    def to_hot(self, arg_dict):
+    def to_hot(self, tenant_id):
         # get tenant_id from user is allowed, but not suggested
         # getting tenant_id keystone client is more safe way
         properties = {}
         for key, value in self.items():
             if value:
-                if isinstance(self.fields[key], type):
-                    properties.update({key:value.to_hot(arg_dict)})
-                elif isinstance(self.fields[key], types.DictType):
+                if isinstance(self.fields[key], types.DictType):
                     if self.fields[key]['class']:#list of dict
-                        properties.update({key:[v.to_hot(arg_dict)for v in value]})
+                        properties.update({key:[v.to_hot(tenant_id)for v in value]})
                     else:#single dict
-                        properties.update({key:value.to_hot(arg_dict)})
+                        properties.update({key:value.to_hot(tenant_id)})
                 else:#None, get_resource, simple_list
                     properties.update({key:value})
             else:
-                if key in arg_dict: 
-                    properties.update({key:arg_dict[key]})
+                if key=='tenant_id': 
+                    properties.update({key:tenant_id})
 
         if self.hot_type == None:
             return properties
@@ -51,6 +53,28 @@ class OSResource(Element):
                 'properties':properties
             }
         }
+
+    def to_element(self, template):
+        properties = template.get('properties')
+        if properties == None:
+            if self.hot_type !=None :
+                return
+            else:
+                properties = template
+        for key, value in properties.items():
+            if value:
+                self[key]=[]
+                if isinstance(self.fields[key], types.DictType):
+                    if self.fields[key]['class']:
+                        OSNodeClass = self.fields[key]['class']
+                        for v in value:
+                            os_node = OSNodeClass(fields=self.fields[key]['fields'],template=v)
+                            self[key].append(os_node)
+                    else:
+                        self[key] = OSResource(fields=self.fields[key]['fields'],template=value)
+                else:
+                    if key=='tenant_id': self[key]=None
+                    else: self[key]=value
 """
 class (OSResource):
     fields = {
@@ -225,6 +249,7 @@ class OSNeutronIPsecSiteConnection(OSResource):
     }
     hot_type = 'OS::Neutron::IPsecSiteConnection'
 
+
 class OSNeutronFirewall(OSResource):
     fields = {
         'osname':None,
@@ -348,38 +373,62 @@ class OSSliver(Element):
         'sliver_name':None, 
         'sliver_type':None,
  
-        'network':OSNeutronNet,
-        'router':OSNeutronRouter,
-        'subnet':OSNeutronSubnet,
-        'router_interface':OSNeutronRouterInterface,
-        'server':OSNovaServer,
+        'network': OSNeutronNet,
+        'router': OSNeutronRouter,
+        'subnet': OSNeutronSubnet,
+        'router_interface': OSNeutronRouterInterface,
+        'server': OSNovaServer,
 
-        'vpnservice':OSNeutronVPNService,
-        'ikepolicy':OSNeutronIKEPolicy,
-        'ipsecpolicy':OSNeutronIPsecPolicy,
-        'ipsecsiteconnection':OSNeutronIPsecSiteConnection,
-        'firewall':OSNeutronFirewall,
-        'firewallpolicy':OSNeutronFirewallPolicy,
-        'firewallrule':OSNeutronFirewallRule,
-        'loadbalancer':OSNeutronLoadBalancer,
-        'pool':OSNeutronPool,
-        'poolmember':OSNeutronPoolMember,
-        'healthmonitor':OSNeutronHealthMonitor,
+        'vpnservice': OSNeutronVPNService,
+        'ikepolicy': OSNeutronIKEPolicy,
+        'ipsecpolicy': OSNeutronIPsecPolicy,
+        'ipsecsiteconnection': OSNeutronIPsecSiteConnection,
+        'firewall': OSNeutronFirewall,
+        'firewallpolicy': OSNeutronFirewallPolicy,
+        'firewallrule': OSNeutronFirewallRule,
+        'loadbalancer': OSNeutronLoadBalancer,
+        'pool': OSNeutronPool,
+        'poolmember': OSNeutronPoolMember,
+        'healthmonitor': OSNeutronHealthMonitor,
 
         ######It's not required in SFA ->not tested######
-        'floatingip':OSNeutronFloatingIP,
-        'floatingipAssociation':OSNeutronFloatingIPAssociation
+        'floatingip': OSNeutronFloatingIP,
+        'floatingipAssociation': OSNeutronFloatingIPAssociation
         ##################################################
     }
 
-    def to_hot(self, arg_dict):# hot yaml(x) hot json(o)
+    def __init__(self, element=None, keys=None, template=None, sliver_name=None, sliver_type=None):
+        Element.__init__(self, element, keys)
+        if template and sliver_name and sliver_type:
+            self.to_element(template, sliver_name, sliver_type)
+
+    def to_hot(self, tenant_id):# hot yaml(x) hot json(o)
         resources = {}
         for rsrc_list in self.values():
             if isinstance(rsrc_list, list):
                 for resource in rsrc_list:
-                    resources.update(resource.to_hot(arg_dict))
+                    resources.update(resource.to_hot(tenant_id))
         return self['sliver_name'], {
             'heat_template_version':"2013-05-23",
             'description':{'component_id':self['component_id']},
             'resources': resources
         }
+
+    def to_element(self, template, sliver_name, sliver_type):
+        self['component_id'] = component_id = template.get('description').get('component_id')
+        self['sliver_name'] = sliver_name
+        self['sliver_type'] = sliver_type
+        resources = template.get('resources')
+
+        suports = {}
+        for rspec_type, OSClass in self.fields.items():
+            if OSClass:
+                suports.update(
+                    {OSClass.hot_type:(rspec_type,OSClass)})
+
+        for name, value in resources.items():
+            rspec_type, OSClass = suports[value['type']]
+            rspec_node = OSClass(name=name, template=value)
+            if rspec_node:
+                if self[rspec_type]==None: self[rspec_type]=[]
+                self[rspec_type].append(rspec_node)

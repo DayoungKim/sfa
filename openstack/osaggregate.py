@@ -13,7 +13,7 @@ from sfa.util.sfalogging import logger
 from sfa.storage.model import SliverAllocation
 
 from sfa.rspecs.rspec import RSpec
-from sfa.rspecs.elements.openstack import *
+from sfa.rspecs.elements.openstackv2 import *
 from sfa.rspecs.version_manager import VersionManager
 from sfa.rspecs.elements.node import NodeElement
 
@@ -90,14 +90,14 @@ class OSAggregate:
         version = version_manager.get_version(version)
         rspec_version = version_manager._get_version(version.type, version.version, 'manifest')
         rspec = RSpec(version=rspec_version, user_options=options)
-
         # Update connection for the current user
         xrn = Xrn(urns[0], type='slice')
         user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]
         tenant_name = OSXrn(xrn=urns[0], type='slice').get_hrn()
-        self.driver.shell.compute_manager.connect(username=user_name, tenant=tenant_name, password=user_name)
+        self.driver.shell.orchest_manager.connect(username=user_name,
+                                                  tenant=tenant_name,
+                                                  password=user_name)
 
-        # For delay to collect instance info 
         time.sleep(3)
         # Get instances from the Openstack
         instances = self.get_instances(xrn)
@@ -154,8 +154,8 @@ class OSAggregate:
         # look up instances
         try:
             for slice_name in slice_names:
-                servers = self.driver.shell.orchest_manager.stacks.list()
-                instances.extend(servers)
+                stacks = self.driver.shell.orchest_manager.stacks.list()
+                instances.extend(stacks)
         except(exceptions.Unauthorized):
             print "[WARN] The instance(s) in Openstack is/are not permitted."
             logger.warn("The instance(s) in Openstack is/are not permitted.")
@@ -163,23 +163,25 @@ class OSAggregate:
 
     def instance_to_rspec_node(self, instance):
         # determine node urn
-        node_xrn = instance.meatadata.get('component_id')
+        node_xrn = instance.description.get('component_id')
         if not node_xrn:
             node_xrn = OSXrn(self.driver.hrn+'.'+'openstack', type='node')
         else:
             node_xrn = OSXrn(xrn=node_xrn, type='node')
 
         rspec_node = NodeElement()
-        if not instance.metadata.get('component_manager_id'):
+        if not instance.description.get('component_manager_id'):
             rspec_node['component_manager_id'] = Xrn(self.driver.hrn, type='authority+am').get_urn()
         else:
-            rspec_node['component_manager_id'] = instance.metadata.get('component_manager_id')
+            rspec_node['component_manager_id'] = instance.description.get('component_manager_id')
         rspec_node['component_id'] = node_xrn.urn
         rspec_node['component_name'] = node_xrn.name
-        rspec_node['sliver_id'] = OSXrn(name=('koren'+'.'+ instance.name), 
+        rspec_node['sliver_id'] = OSXrn(name=('koren'+'.'+ instance.stack_name), 
                                               id=instance.id,
                                               type='node+openstack').get_urn()
-
+        template = self.driver.shell.orchest_manager.stacks.template(instance.id)
+        sliver = OSSliver(template=template, sliver_name=instance.stack_name, sliver_type='openstack')
+        """
         # get sliver details about quotas of resource
         flavor = self.driver.shell.compute_manager.flavors.find(id=instance.flavor['id'])
         sliver = self.flavor_to_sliver(flavor=flavor, instance=instance, xrn=None)
@@ -219,7 +221,7 @@ class OSAggregate:
                 else:
                     type = { 'public': fields }
                 sliver['addresses'].append(type)
-
+        """
         rspec_node['slivers'] = [sliver]
         return rspec_node
 
@@ -261,7 +263,7 @@ class OSAggregate:
         return sliver
 
     def instance_to_geni_sliver(self, instance):
-        sliver_id = OSXrn(name=('koren'+'.'+ instance.name), id=instance.id, \
+        sliver_id = OSXrn(name=('koren'+'.'+ instance.stack_name), id=instance.id, \
                           type='node+openstack').get_urn()
 
         constraint = SliverAllocation.sliver_id.in_([sliver_id])
@@ -294,7 +296,7 @@ class OSAggregate:
                         'geni_allocation_status': sliver_allocation_status,
                         'geni_operational_status': op_status,
                         'geni_error': error,
-                        'os_sliver_created_time': instance.created
+                        'os_sliver_created_time': instance.creation_time
                       }
         return geni_sliver
                         
@@ -478,7 +480,7 @@ class OSAggregate:
             instances = node.get('slivers', [])
             for instance in instances:
                 try:
-                    sliver_name, sliver_heat_dict = instance.to_hot(arg_dict={'tenant_id':tenant.id})
+                    sliver_name, sliver_heat_dict = instance.to_hot(tenant_id=tenant.id)
                     print sliver_heat_dict
                     sliver = self.driver.shell.orchest_manager.stacks.create(
                                 stack_name=sliver_name,
