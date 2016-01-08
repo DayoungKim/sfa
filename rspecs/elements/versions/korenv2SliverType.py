@@ -3,6 +3,14 @@ from sfa.rspecs.elements.openstackv2 import *
 from sfa.rspecs.elements.element import Element
 from sfa.util.sfalogging import logger
 import types
+from uuid import UUID
+
+def is_uuid(uuid_string):
+    try:
+        check = UUID(uuid_string, version=4)
+    except ValueError:
+        return False
+    return check.hex == uuid_string.replace('-','')
 
 class Korenv2SliverType:
 
@@ -13,9 +21,7 @@ class Korenv2SliverType:
         if not isinstance(slivers, list):
             slivers = [slivers]
         sliver_elem = xml.add_element('{%s}sliver' %xml.namespaces['openstack'])
-        ret = Korenv2SliverType.get_os_sliver_nodes(sliver_elem, slivers, OSSliver)
-        return ret
-        #return Korenv2SliverType.get_os_sliver_nodes(sliver_elem, slivers, OSSliver)
+        return Korenv2SliverType.get_os_sliver_nodes(sliver_elem, slivers, OSSliver)
 
     @staticmethod
     def get_os_sliver_nodes(xml, slivers, OSNodeClass=None, fields=None):
@@ -40,7 +46,10 @@ class Korenv2SliverType:
                                                                   fields[key]['fields'])
                     elif isinstance(fields[key], types.StringType):
                         if fields[key] == 'get_resource':
-                            xml.set(key, value['get_resource'])
+                            if value.get('get_resource'):
+                                xml.set(key, value['get_resource'])
+                            else:
+                                xml.set(key, value)
                         elif fields[key] == 'simple_list':
                             for v in value:
                                 os_elem = xml.add_element('{%s}%s' %(xml.namespaces['openstack'], key))
@@ -83,8 +92,11 @@ class Korenv2SliverType:
                 elif isinstance(value, types.StringType):
                     if value == 'get_resource':
                         #4. hot function type (value=='get_resource', ...)
-                        if tag in rspec_node.attrib : 
-                            os_node[tag]={value:rspec_node.attrib[tag]}
+                        if tag in rspec_node.attrib :
+                            if is_uuid(rspec_node.attrib[tag]):
+                                os_node[tag]=rspec_node.attrib[tag]
+                            else:
+                                os_node[tag]={value:rspec_node.attrib[tag]}
                     elif value == 'simple_list':
                         #5. simple list type [value, ... 
                         dummy_nodes = Korenv2SliverType.get_os_element(

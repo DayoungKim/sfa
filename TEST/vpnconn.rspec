@@ -6,18 +6,22 @@
        type="request"> 
   <node component_id="urn:publicid:IDN+koren+node+openstack" component_manager_id="urn:publicid:IDN+koren+authority+am">
     <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" 
-                      sliver_name="slivervpn" sliver_type="heat stack">
+                      sliver_name="vpnconn" sliver_type="heat stack">
       <openstack:ikepolicy osname='ikepolicy1'/>
       <openstack:ipsecpolicy osname='ipsecpolicy1'/>
-      <openstack:ipsecsiteconnection osname='conn1' peer_address='172.24.4.14' peer_id='172.24.4.14' 
-                      psk='secret' vpnservice_id='a26e3fc9-3a73-4a85-b333-ccbd965470b3'
+
+      <openstack:vpnservice osname='vpn1' router='router1_id' subnet='subnet1_id'/>
+      <openstack:vpnservice osname='vpn2' router='router2_id' subnet='subnet2_id'/>
+
+      <openstack:ipsecsiteconnection osname='conn1' peer_address='router2_ip' peer_id='router2_ip' 
+                      psk='secret' vpnservice_id='vpn1'
                       ikepolicy_id='ikepolicy1' ipsecpolicy_id='ipsecpolicy1'>
-        <openstack:peer_cidrs value='20.0.0.0/24'/>
+        <openstack:peer_cidrs value='subnet2_cidr'/>
       </openstack:ipsecsiteconnection>
-      <openstack:ipsecsiteconnection osname='conn2' peer_address='172.24.4.13' peer_id='172.24.4.13'
-                      psk='secret' vpnservice_id='ab2f6095-da64-4b6f-83e4-7aa058e3f81f' 
+      <openstack:ipsecsiteconnection osname='conn2' peer_address='router1_ip' peer_id='router1_ip'
+                      psk='secret' vpnservice_id='vpn2' 
                       ikepolicy_id='ikepolicy1' ipsecpolicy_id='ipsecpolicy1'>
-        <openstack:peer_cidrs value='10.0.0.0/24'/>
+        <openstack:peer_cidrs value='subnet1_cidr'/>
       </openstack:ipsecsiteconnection>
     </openstack:sliver>
 

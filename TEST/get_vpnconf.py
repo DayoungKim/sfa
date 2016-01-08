@@ -31,11 +31,5 @@ for router in neutron.list_routers()['routers']:
     print 'router|name|%s|id|%s|ip|%s' %(router['name'], router['id'], router_ip)
 for vpn in neutron.list_vpnservices()['vpnservices']:
     print 'vpn|name|%s|id|%s' %(vpn['name'],vpn['id'])
-
-"""
 for subnet in neutron.list_subnets()['subnets']:
-    if 'subnet_a' in subnet['name']:
-        sa_id = subnet['id']
-    if 'subnet_b' in subnet['name']:
-        sb_id = subnet['id']
-"""
+    print 'sunnet|name|%s|id|%s|cidr|%s' %(subnet['name'],subnet['id'],subnet['cidr'])

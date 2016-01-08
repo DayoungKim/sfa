@@ -1,4 +1,5 @@
 from sfa.rspecs.elements.element import Element  
+
 import types
 
 class OSResource(Element):
@@ -245,7 +246,7 @@ class OSNeutronIPsecSiteConnection(OSResource):
         'peer_cidrs':'simple_list',
         'peer_id':None,#remote branch router id
         'psk':None,
-        'vpnservice_id':None
+        'vpnservice_id':'get_resource'
     }
     hot_type = 'OS::Neutron::IPsecSiteConnection'
 
