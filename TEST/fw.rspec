@@ -6,7 +6,7 @@
        type="request"> 
   <node component_id="urn:publicid:IDN+koren+node+openstack" component_manager_id="urn:publicid:IDN+koren+authority+am">
     <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" 
-                      sliver_name="sliverfw" sliver_type="heat stack">
+                      sliver_name="sliverfw" sliver_type="openstack">
         <openstack:firewallrule osname='fwrule' protocol='tcp' destination_port='80' action='allow'/>
         <openstack:firewallpolicy osname='fwpolicy'>
             <openstack:firewall_rules get_resource='fwrule'/>
