@@ -6,7 +6,7 @@
        type="request"> 
   <node component_id="urn:publicid:IDN+koren+node+openstack" component_manager_id="urn:publicid:IDN+koren+authority+am">
     <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" 
-                      sliver_name="sliver11" sliver_type="heat stack">
+                      sliver_name="sliver11" sliver_type="openstack">
       <openstack:network osname='private1'/>
       <openstack:router osname='router1'>
         <openstack:external_gateway_info network='public'/>
@@ -26,7 +26,7 @@
     </openstack:sliver> 
 
     <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" 
-                      sliver_name="sliver22" sliver_type="heat stack">
+                      sliver_name="sliver22" sliver_type="openstack">
       <openstack:network osname='private2'/>
       <openstack:router osname='router2'>
         <openstack:external_gateway_info network='public'/>
