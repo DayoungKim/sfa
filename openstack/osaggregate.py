@@ -118,30 +118,6 @@ class OSAggregate:
         return result
 
     def get_instances(self, xrn):
-        """
-        # parse slice names and sliver ids
-        slice_names=[]
-        sliver_ids=[]
-        instances=[]
-        if xrn.type == 'slice':
-            slice_names.append(xrn.get_hrn())
-        else:
-            print "[WARN] We don't know the xrn[%s]" % xrn.type
-            logger.warn("[WARN] We don't know the xrn[%s], Check it!" % xrn.type)
-            
-        # look up instances
-        try:
-            for slice_name in slice_names:
-                servers = self.driver.shell.compute_manager.servers.findall()
-                instances.extend(servers)
-            for sliver_id in sliver_ids:
-                servers = self.driver.shell.compute_manager.servers.findall()
-                instances.extend(servers)
-        except(exceptions.Unauthorized):
-            print "[WARN] The instance(s) in Openstack is/are not permitted."
-            logger.warn("The instance(s) in Openstack is/are not permitted.")
-        return list( set(instances) )
-        """
         # parse slice names and sliver ids
         slice_names=[]
         instances=[]
@@ -181,47 +157,6 @@ class OSAggregate:
                                               type='node+openstack').get_urn()
         template = self.driver.shell.orchest_manager.stacks.template(instance.id)
         sliver = OSSliver(template=template, sliver_name=instance.stack_name, sliver_type='openstack')
-        """
-        # get sliver details about quotas of resource
-        flavor = self.driver.shell.compute_manager.flavors.find(id=instance.flavor['id'])
-        sliver = self.flavor_to_sliver(flavor=flavor, instance=instance, xrn=None)
-   
-        # get availability zone
-        zone_name = instance.to_dict().get('OS-EXT-AZ:availability_zone')    
-        sliver['availability_zone'] = OSZone({ 'name': zone_name })
-
-        # get firewall rules
-        group_names = instance.security_groups
-        sliver['security_groups']=[]
-        if group_names and isinstance(group_names, list):
-            for group in group_names:
-                group = self.driver.shell.compute_manager.security_groups.find(name=group.get('name'))
-                sliver['security_groups'].append(self.secgroup_to_rspec(group))
-
-        # get disk image from the Nova service
-        image = self.driver.shell.compute_manager.images.get(image=instance.image['id'])
-        boot_image = os_image_to_rspec_disk_image(image)
-        sliver['boot_image'] = boot_image
-
-        # Get addresses of the sliver
-        sliver['addresses']=[]
-        addresses = instance.addresses
-        if addresses:
-            from netaddr import IPAddress
-            for addr in addresses.get('private'):
-                fields = OSSliverAddr({ 'mac_address': addr.get('OS-EXT-IPS-MAC:mac_addr'),
-                                        'version': str(addr.get('version')),
-                                        'address': addr.get('addr'),
-                                        'type': addr.get('OS-EXT-IPS:type') })
-                # Check if ip address is local
-                ipaddr = IPAddress(addr.get('addr'))
-                if (ipaddr.words[0] == 10) or (ipaddr.words[0] == 172 and ipaddr.words[1] == 16) or \
-                   (ipaddr.words[0] == 192 and ipaddr.words[1] == 168):
-                    type = { 'private': fields }
-                else:
-                    type = { 'public': fields }
-                sliver['addresses'].append(type)
-        """
         rspec_node['slivers'] = [sliver]
         return rspec_node
 
@@ -514,41 +449,6 @@ class OSAggregate:
         self.driver.shell.orchest_manager.stacks.delete(instance.id)
         multiclient.run(_delete_security_group, instance)
         return 1
-
-        """
-        def _delete_security_group(inst):
-            security_group = inst.metadata.get('security_groups', '')
-            if security_group:
-                manager = SecurityGroup(self.driver)
-                timeout = 10.0 # wait a maximum of 10 seconds before forcing the security group delete
-                start_time = time.time()
-                instance_deleted = False
-                while instance_deleted == False and (time.time() - start_time) < timeout:
-                    tmp_inst = self.driver.shell.compute_manager.servers.findall(id=inst.id)
-                    if not tmp_inst:
-                        instance_deleted = True
-                    time.sleep(.5)
-                manager.delete_security_group(security_group)
-
-        multiclient = MultiClient()
-        tenant = self.driver.shell.auth_manager.tenants.find(id=instance.tenant_id)
-        
-        # Update connection for the current client
-        xrn = Xrn(tenant.name)
-        user_name = xrn.get_authority_hrn() + '.' + xrn.leaf.split('-')[0]
-        self.driver.shell.compute_manager.connect(username=user_name, tenant=tenant.name, password=user_name)
-
-        args = { 'name': instance.name,
-                 'id': instance.id }
-        instances = self.driver.shell.compute_manager.servers.findall(**args)
-        security_group_manager = SecurityGroup(self.driver)
-        for instance in instances:
-            # destroy instance
-            self.driver.shell.compute_manager.servers.delete(instance)
-            # deleate this instance's security groups
-            multiclient.run(_delete_security_group, instance)
-        return 1
-        """
 
     def delete_router(self, tenant_id):
         is_router = False
