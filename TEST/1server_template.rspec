@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rspec xmlns="http://www.geni.net/resources/rspec/3"
+       xmlns:openstack="http://203.255.254.100:8888/resources/sfa/rspecs/openstack" 
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xsi:schemaLocation="http://www.geni.net/resources/rspec/3/request.xsd http://203.255.254.100:8888/resources/sfa/rspecs/openstack/openstack.xsd"
+       type="request"> 
+  <node component_id="urn:publicid:IDN+koren+node+openstack" component_manager_id="urn:publicid:IDN+koren+authority+am">
+    <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" 
+                      sliver_name="sliver1server" sliver_type="openstack">
+      <openstack:server osname='vm_1server' flavor='m1.tiny' image='cirros-0.3.4-x86_64-uec-ramdisk' availability_zone='nova'>
+        <openstack:networks network='network_id'/>
+        <openstack:security_groups value='default'/>
+      </openstack:server>
+
+    </openstack:sliver>
+  </node>
+</rspec>
