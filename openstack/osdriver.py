@@ -473,6 +473,7 @@ class OpenstackDriver(Driver):
         version = version_manager.get_version(version_dict)
         desc = aggregate.describe(urns, version=version, options=options)
         status = {'geni_urn': desc['geni_urn'],
+                  'geni_rspec': desc['geni_rspec'],
                   'geni_slivers': desc['geni_slivers']}
         return status
 
@@ -741,7 +742,6 @@ class OpenstackDriver(Driver):
             sliver_ids.append(sliver_id)
             # delete the instance related with requested tenant
             aggregate.delete_instance(instance)
-            id_set.add(instance.tenant_id)       
 
         # Delete sliver allocation states
         dbsession=self.api.dbsession()

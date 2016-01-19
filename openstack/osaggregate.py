@@ -393,6 +393,9 @@ class OSAggregate:
         while (stack.stack_status == 'CREATE_IN_PROGRESS'):
             time.sleep(0.5)
             stack = self.driver.shell.orchest_manager.stacks.get(stack.id)
+        if stack.stack_status != 'CREATE_COMPLETE':
+            self.driver.shell.orchest_manager.stacks.delete(stack.id)
+            stack = None
         return stack
 
     def run_instances(self, tenant_name, user_name, rspec, key_name, pubkeys):
@@ -416,13 +419,15 @@ class OSAggregate:
             for instance in instances:
                 try:
                     sliver_name, sliver_heat_dict = instance.to_hot(tenant_id=tenant.id)
-                    print sliver_heat_dict
+                    #print sliver_heat_dict
                     sliver = self.driver.shell.orchest_manager.stacks.create(
                                 stack_name=sliver_name,
                                 template=json.dumps(sliver_heat_dict))
                     print sliver
                     sliver = self.driver.shell.orchest_manager.stacks.get(sliver['stack']['id'])
-                    slivers.append(sliver)
+                    sliver = self.check_stack_status(sliver)
+                    if sliver:
+                        slivers.append(sliver)
                     logger.info("Created Openstack instance [%s]" % sliver_name)
                 except Exception, err:
                     logger.log_exc(err)

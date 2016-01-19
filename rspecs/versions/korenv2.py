@@ -4,6 +4,7 @@ from lxml import etree
 from StringIO import StringIO
 from sfa.util.xrn import Xrn
 from sfa.util.sfalogging import logger
+from sfa.rspecs.rspec import RSpec
 from sfa.rspecs.version import RSpecVersion
 from sfa.rspecs.elements.versions.korenv2Node import Korenv2Node
 

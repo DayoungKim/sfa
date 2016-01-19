@@ -56,7 +56,6 @@ class Korenv2Node:
 
 
 if __name__ == '__main__':
-    from sfa.rspecs.rspec import RSpec
     r = RSpec('/tmp/koren_node.rspec')
     r2 = RSpec(version = 'KOREN')
     nodes = Korenv2Node.get_nodes(r.xml)
