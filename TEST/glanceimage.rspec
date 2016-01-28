@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rspec xmlns="http://www.geni.net/resources/rspec/3"
+       xmlns:openstack="http://203.255.254.100:8888/resources/sfa/rspecs/openstack" 
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xsi:schemaLocation="http://www.geni.net/resources/rspec/3/request.xsd http://203.255.254.100:8888/resources/sfa/rspecs/openstack/openstack.xsd"
+       type="request"> 
+  <node component_id="urn:publicid:IDN+koren+node+openstack" component_manager_id="urn:publicid:IDN+koren+authority+am">
+    <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" sliver_name="glanceimagesliver" sliver_type="openstack">
+      <openstack:image container_format="ova" disk_format="iso" osname="nuriimage" protected="true" location="http://releases.ubuntu.com/14.04.3/ubuntu-14.04.3-desktop-amd64.iso?_ga=1.148542783.949778419.1418795518" min_disk="1024"/>
+    </openstack:sliver>
+  </node>
+</rspec>

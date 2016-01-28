@@ -368,6 +368,20 @@ class OSNeutronFloatingIPAssociation(OSResource):
     }
     hot_type = 'OS::Neutron::FloatingIPAssociation'
 
+class OSGlanceImage(OSResource):
+    fields = {
+        'osname':None,
+        'container_format': None,#Required, Allowed values: ami, ari, aki, bare, ova, ovf
+        'disk_format': None, #Required, Allowed values: ami, ari, aki, vhd, vmdk, raw, qcow2, vdi, iso
+        'id': 'get_resources', #The image ID. Glance will generate a UUID if not specified
+        'is_public': None, #Boolean Defaults to False
+        'location': None, #Required, String, url format (ex : "swift://example.com/container/obj")
+        'min_disk': None, #Integer Defaults to "0" The value must be at least 0
+        'min_ram': None, #Integer Defaults to "0" The value must be at least 0
+        'protected': None #Boolean Defaults to False
+    }
+    hot_type = 'OS::Glance::Image'
+
 class OSSliver(Element):
     fields = {
         'component_id':None,
@@ -391,6 +405,8 @@ class OSSliver(Element):
         'pool': OSNeutronPool,
         'poolmember': OSNeutronPoolMember,
         'healthmonitor': OSNeutronHealthMonitor,
+
+        'image': OSGlanceImage,
 
         ######It's not required in SFA ->not tested######
         'floatingip': OSNeutronFloatingIP,

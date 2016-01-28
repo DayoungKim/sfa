@@ -1,0 +1,16 @@
+{
+    "heat_template_version": "2013-05-23", 
+    "description": {"component_id": "urn:publicid:IDN+koren+node+openstack"}, 
+    "resources": {
+        "nuriimage": {
+            "type": "OS::Glance::Image", 
+            "properties":{
+                "container_format": "ova",
+                "disk_format": "iso",
+                "min_disk": "1024",
+                "location":"http://releases.ubuntu.com/14.04.3/ubuntu-14.04.3-desktop-amd64.iso?_ga=1.148542783.949778419.1418795518",
+                "protected": "true"
+            }
+        }
+    }
+}

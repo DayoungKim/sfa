@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rspec xmlns="http://www.geni.net/resources/rspec/3"
+       xmlns:openstack="http://203.255.254.100:8888/resources/sfa/rspecs/openstack" 
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xsi:schemaLocation="http://www.geni.net/resources/rspec/3/request.xsd http://203.255.254.100:8888/resources/sfa/rspecs/openstack/openstack.xsd"
+       type="request"> 
+  <node component_id="urn:publicid:IDN+koren+node+openstack" component_manager_id="urn:publicid:IDN+koren+authority+am">
+    <openstack:sliver component_id="urn:publicid:IDN+koren+node+openstack" 
+                      sliver_name="floatingipsliver" sliver_type="openstack">
+
+      <openstack:floatingipAssociation floatingip_id="floatingip" fixed_ip_address="1.2.3.4" osname="fipasso"/>
+      <openstack:floatingip fixed_ip_address="1.1.1.1" port_id="port_1111" osname="floatingip"/>
+
+    </openstack:sliver>
+  </node>
+</rspec>
