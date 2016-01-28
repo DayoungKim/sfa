@@ -5,7 +5,7 @@ from keystoneclient.v2_0 import client as keystone_client
 username='admin'
 password='kulcloud'
 tenant_name='admin'
-auth_url = 'http://10.1.100.27:35357/v2.0'
+auth_url = 'http://10.1.100.43:35357/v2.0'
 #openstack clients
 keystone =  keystone_client.Client(username=username,
                                    password=password,
@@ -19,7 +19,7 @@ for r in roles:
         not_exist = True
 
 if not_exist:
-    keystone.rioles.create('heat_stack_owner')
+    keystone.roles.create('heat_stack_owner')
 
 ###########################################
 #import pdb; pdb.set_trace()
